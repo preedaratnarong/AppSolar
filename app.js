@@ -27,7 +27,7 @@
   const defaultState = {
     projects: [seedProject], activeProjectId: seedProject.id,
     equipment: {panelModel:"N-Type Mono 550W", panelWatt:550, panelArea:2.65, batteryModel:"Rack Battery 51.2V", batteryModule:5.12, batteryDod:90, inverterModel:"3-Phase Hybrid", inverterEfficiency:96.5, dcAcRatio:1.15},
-    settings: {fontScale:"1.1", highContrast:false, defaultLocation:"ชลบุรี, ประเทศไทย", defaultSunHours:4.7}
+    settings: {fontScale:"1.1", highContrast:false, defaultLocation:"ชลบุรี, ประเทศไทย", defaultSunHours:4.7, background:{dataUrl:null,opacity:18,blur:0,position:"center center",size:"cover"}}
   };
 
   let state = loadState();
@@ -42,10 +42,10 @@
     try {
       const saved = JSON.parse(localStorage.getItem(APP_KEY));
       if (!saved?.projects?.length) return clone(defaultState);
-      return {...clone(defaultState), ...saved, equipment:{...defaultState.equipment,...saved.equipment}, settings:{...defaultState.settings,...saved.settings}};
+      return {...clone(defaultState), ...saved, equipment:{...defaultState.equipment,...saved.equipment}, settings:{...defaultState.settings,...saved.settings,background:{...defaultState.settings.background,...(saved.settings?.background||{})}}};
     } catch { return clone(defaultState); }
   }
-  function persist(){ localStorage.setItem(APP_KEY, JSON.stringify(state)); }
+  function persist(){ try { localStorage.setItem(APP_KEY, JSON.stringify(state)); } catch { toast("พื้นที่จัดเก็บไม่พอ กรุณาใช้ภาพขนาดเล็กลงหรือกดล้างภาพเดิม","error"); } }
   function activeProject(){ return state.projects.find(p => p.id === state.activeProjectId) || state.projects[0]; }
   function toast(message, kind = "info"){
     const el = $("toast"); el.textContent = message; el.style.borderColor = kind === "error" ? "#f35b5b" : kind === "success" ? "#68d46f" : "#4f7188";
@@ -274,8 +274,49 @@
     state.equipment={panelModel:$("panelModel").value,panelWatt:number("equipmentPanelWatt",550),panelArea:number("panelArea",2.65),batteryModel:$("batteryModel").value,batteryModule:number("batteryModule",5.12),batteryDod:number("equipmentDod",90),inverterModel:$("inverterModel").value,inverterEfficiency:number("inverterEfficiency",96.5),dcAcRatio:number("dcAcRatio",1.15)};
     $("panelWatt").value=state.equipment.panelWatt;$("batteryDod").value=state.equipment.batteryDod;persist();calculate();toast("บันทึกค่าอุปกรณ์แล้ว","success");
   }
-  function applySettings(){document.documentElement.style.setProperty("--font-scale",state.settings.fontScale);document.body.classList.toggle("high-contrast",!!state.settings.highContrast)}
-  function saveSettings(){state.settings={fontScale:$("fontScale").value,highContrast:$("highContrast").checked,defaultLocation:$("defaultLocation").value,defaultSunHours:number("defaultSunHours",4.7)};persist();applySettings();toast("บันทึกการตั้งค่าแล้ว","success")}
+  function applySettings(){
+    const background=state.settings.background||{};
+    const root=document.documentElement;
+    root.style.setProperty("--font-scale",state.settings.fontScale);
+    root.style.setProperty("--user-bg-image",background.dataUrl?`url("${background.dataUrl}")`:"none");
+    root.style.setProperty("--user-bg-opacity",String((Number(background.opacity)||0)/100));
+    root.style.setProperty("--user-bg-blur",`${Number(background.blur)||0}px`);
+    root.style.setProperty("--user-bg-position",background.position||"center center");
+    root.style.setProperty("--user-bg-size",background.size||"cover");
+    document.body.classList.toggle("has-user-bg",!!background.dataUrl);
+    document.body.classList.toggle("high-contrast",!!state.settings.highContrast);
+    updateBackgroundControls();
+  }
+  function readBackgroundControls(){
+    const current=state.settings.background||{};
+    return {...current,opacity:number("backgroundOpacity",18),blur:number("backgroundBlur",0),position:$("backgroundPosition")?.value||"center center",size:$("backgroundSize")?.value||"cover"};
+  }
+  function updateBackgroundControls(){
+    const background=state.settings.background||{};
+    if($("backgroundOpacity"))$("backgroundOpacity").value=background.opacity??18;
+    if($("backgroundBlur"))$("backgroundBlur").value=background.blur??0;
+    if($("backgroundPosition"))$("backgroundPosition").value=background.position||"center center";
+    if($("backgroundSize"))$("backgroundSize").value=background.size||"cover";
+    if($("backgroundOpacityValue"))$("backgroundOpacityValue").textContent=background.opacity??18;
+    if($("backgroundBlurValue"))$("backgroundBlurValue").textContent=background.blur??0;
+    const preview=$("backgroundPreview");
+    if(preview){preview.classList.toggle("has-image",!!background.dataUrl);preview.style.backgroundImage=background.dataUrl?`url("${background.dataUrl}")`:"";preview.style.backgroundPosition=background.position||"center center";preview.style.backgroundSize=background.size||"cover";}
+  }
+  function saveSettings(){
+    state.settings={...state.settings,fontScale:$("fontScale").value,highContrast:$("highContrast").checked,defaultLocation:$("defaultLocation").value,defaultSunHours:number("defaultSunHours",4.7),background:readBackgroundControls()};
+    persist();applySettings();toast("บันทึกการตั้งค่าแล้ว","success");
+  }
+  function saveBackground(){state.settings.background=readBackgroundControls();persist();applySettings();toast("บันทึกภาพพื้นหลังแล้ว","success")}
+  function clearBackground(){state.settings.background={...(state.settings.background||{}),dataUrl:null};persist();applySettings();toast("ล้างภาพพื้นหลังแล้ว","success")}
+  function resizeBackground(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();reader.onerror=()=>reject(new Error("อ่านไฟล์ไม่สำเร็จ"));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error("ภาพไม่ถูกต้อง"));image.onload=()=>{const max=1920,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.82))};image.src=reader.result};reader.readAsDataURL(file);
+    });
+  }
+  async function handleBackgroundUpload(event){
+    const file=event.target.files?.[0];if(!file)return;if(file.size>20*1024*1024){toast("ภาพใหญ่เกิน 20 MB กรุณาเลือกภาพที่เล็กลง","error");event.target.value="";return}
+    try{state.settings.background={...(state.settings.background||{}),dataUrl:await resizeBackground(file)};applySettings();toast("เพิ่มภาพพื้นหลังแล้ว กด “บันทึกภาพพื้นหลัง” เพื่อเก็บค่า","success")}catch{toast("ไม่สามารถอ่านภาพนี้ได้","error")}event.target.value="";
+  }
   async function requestNotifications(){if(!("Notification" in window)){toast("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน","error");return}const result=await Notification.requestPermission();if(result==="granted"){new Notification("NEXORA Solar Planner",{body:"เปิดการแจ้งเตือนเรียบร้อย"});toast("เปิดการแจ้งเตือนแล้ว","success")}else toast("ยังไม่ได้รับอนุญาตการแจ้งเตือน","error")}
 
   function bindEvents(){
@@ -289,6 +330,8 @@
     $("projectForm").addEventListener("submit",e=>{e.preventDefault();const name=$("projectNameInput").value.trim(),location=$("projectLocationInput").value.trim();if(!name||!location)return;createProject(name,location);$("projectDialog").close();$("projectForm").reset();$("projectLocationInput").value=state.settings.defaultLocation});
     $("saveEquipment").addEventListener("click",saveEquipment);$("exportCsv").addEventListener("click",exportCsv);$("printReport").addEventListener("click",()=>window.print());
     $("saveSettings").addEventListener("click",saveSettings);$("enableNotifications").addEventListener("click",requestNotifications);$("notificationButton").addEventListener("click",requestNotifications);
+    $("backgroundImageInput").addEventListener("change",handleBackgroundUpload);$("saveBackground").addEventListener("click",saveBackground);$("clearBackground").addEventListener("click",clearBackground);
+    ["backgroundOpacity","backgroundBlur","backgroundPosition","backgroundSize"].forEach(id=>$(id).addEventListener("input",()=>{state.settings.background=readBackgroundControls();applySettings()}));
     $("startCamera").addEventListener("click",startCamera);$("stopCamera").addEventListener("click",stopCamera);$("enableCompass").addEventListener("click",enableCompass);$("captureSurvey").addEventListener("click",captureSurvey);
     ["timeSlider","obstacleSlider","fovSlider"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="timeSlider")$("timeValue").textContent=formatTime(number(id));if(id==="obstacleSlider")$("obstacleValue").textContent=number(id);if(id==="fovSlider")$("fovValue").textContent=number(id);drawAROverlay()}));
     $("seasonMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#seasonMode button").forEach(x=>x.classList.toggle("active",x===b));const labels={summer:"ฤดูร้อน",rainy:"ฤดูฝน",winter:"ฤดูหนาว"};$("seasonBadge").textContent=labels[b.dataset.value];renderSunPath();drawAROverlay()});
@@ -300,7 +343,7 @@
     const now=new Date();$("currentDate").textContent=`${now.getDate()} ${THAI_MONTHS[now.getMonth()]}`;
     const p=activeProject();setFormValues(p.inputs);renderProjectSelector();
     Object.entries(state.equipment).forEach(([key,value])=>{const map={panelWatt:"equipmentPanelWatt",batteryDod:"equipmentDod"};const el=$(map[key]||key);if(el)el.value=value});
-    $("fontScale").value=state.settings.fontScale;$("highContrast").checked=state.settings.highContrast;$("defaultLocation").value=state.settings.defaultLocation;$("defaultSunHours").value=state.settings.defaultSunHours;applySettings();bindEvents();calculate();renderProjects();renderReports();
+    $("fontScale").value=state.settings.fontScale;$("highContrast").checked=state.settings.highContrast;$("defaultLocation").value=state.settings.defaultLocation;$("defaultSunHours").value=state.settings.defaultSunHours;applySettings();bindEvents();updateBackgroundControls();calculate();renderProjects();renderReports();
     if("serviceWorker" in navigator && location.protocol!=="file:") navigator.serviceWorker.register("sw.js").catch(()=>{});
   }
   document.addEventListener("DOMContentLoaded",init);
