@@ -248,7 +248,7 @@
   async function startCamera(){
     if(!navigator.mediaDevices?.getUserMedia){toast("กล้องเว็บต้องเปิดผ่าน HTTPS หรือ localhost","error");return}
     try{
-      cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});
+      cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
       $("cameraVideo").srcObject=cameraStream;await $("cameraVideo").play();$("cameraPlaceholder").style.display="none";$("startCamera").disabled=true;$("stopCamera").disabled=false;drawLoop();toast("เปิดกล้องแล้ว ให้หันไปยังพื้นที่ติดตั้ง","success");
     }catch(err){const message=err.name==="NotAllowedError"?"กรุณาอนุญาตกล้อง แล้วเปิดหน้าเว็บใหม่":"เปิดกล้องไม่สำเร็จ กรุณาตรวจสิทธิ์และใช้ HTTPS";toast(message,"error")}
   }
@@ -403,7 +403,14 @@
   }
   async function handleBackgroundUpload(event){
     const file=event.target.files?.[0];if(!file)return;if(file.size>20*1024*1024){toast("ภาพใหญ่เกิน 20 MB กรุณาเลือกภาพที่เล็กลง","error");event.target.value="";return}
-    try{state.settings.background={...(state.settings.background||{}),dataUrl:await resizeBackground(file)};applySettings();toast("เพิ่มภาพพื้นหลังแล้ว กด “บันทึกภาพพื้นหลัง” เพื่อเก็บค่า","success")}catch{toast("ไม่สามารถอ่านภาพนี้ได้","error")}event.target.value="";
+    try{
+      const dataUrl = await resizeBackground(file);
+      const bg = state.settings.background || {};
+      state.settings.background = {...bg, dataUrl: dataUrl, opacity: bg.opacity === 18 ? 100 : (bg.opacity || 100)};
+      applySettings();
+      toast("เพิ่มภาพพื้นหลังแล้ว กด “บันทึกภาพพื้นหลัง” เพื่อเก็บค่า","success");
+    }catch{toast("ไม่สามารถอ่านภาพนี้ได้","error")}
+    event.target.value="";
   }
   async function requestNotifications(){if(!("Notification" in window)){toast("เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน","error");return}const result=await Notification.requestPermission();if(result==="granted"){new Notification("NEXORA Solar Planner",{body:"เปิดการแจ้งเตือนเรียบร้อย"});toast("เปิดการแจ้งเตือนแล้ว","success")}else toast("ยังไม่ได้รับอนุญาตการแจ้งเตือน","error")}
 
