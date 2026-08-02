@@ -10,6 +10,8 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
   <div class="app-shell">
@@ -20,6 +22,7 @@
         <button class="nav-item" data-page="projects" aria-label="โครงการ"><span>▣</span><small>โครงการ</small></button>
         <button class="nav-item" data-page="calculator" aria-label="คำนวณ"><span>▤</span><small>คำนวณ</small></button>
         <button class="nav-item" data-page="sunpath" aria-label="Sun Path"><span>☀</span><small>Sun Path</small></button>
+        <button class="nav-item" data-page="map" aria-label="แผนที่"><span>🌍</span><small>แผนที่</small></button>
         <button class="nav-item" data-page="equipment" aria-label="อุปกรณ์"><span>▥</span><small>อุปกรณ์</small></button>
         <button class="nav-item" data-page="reports" aria-label="รายงาน"><span>▧</span><small>รายงาน</small></button>
         <button class="nav-item" data-page="settings" aria-label="ตั้งค่า"><span>⚙</span><small>ตั้งค่า</small></button>
@@ -139,6 +142,25 @@
           </div>
         </section>
 
+        <section class="page" id="page-map" data-title="แผนที่ดาวเทียม">
+          <div class="page-heading"><div><p class="eyebrow">SATELLITE MAP ANALYSIS</p><h1>วิเคราะห์พื้นที่บนแผนที่</h1><p>ค้นหาและวาดพื้นที่หลังคาบนแผนที่ดาวเทียม เพื่อประเมินพื้นที่ติดตั้งจริง</p></div><div class="button-row"><button class="secondary" id="mapUseLocation">● ไปยังตำแหน่งโปรเจกต์</button></div></div>
+          <div class="map-layout">
+            <article class="map-stage card" id="mapStage">
+              <div id="satelliteMap" class="map-container"></div>
+              <div class="map-overlay-ui">
+                <button class="icon-button" id="mapDrawPoly" title="วาดพื้นที่หลังคา">▤</button>
+                <button class="icon-button" id="mapClearPoly" title="ล้างพื้นที่">🗑</button>
+              </div>
+            </article>
+            <aside class="map-controls card">
+              <h2>ผลการวิเคราะห์พื้นที่</h2>
+              <div class="metric-card amber map-metric"><div class="metric-icon panel-icon">▤</div><div><span>พื้นที่วัดได้</span><strong><b id="mapArea">0.0</b> <small>ตร.ม.</small></strong><em id="mapCapacity">รองรับได้ 0 แผง</em></div></div>
+              <p class="map-help">1. เลื่อนแผนที่ไปยังตำแหน่งบ้าน<br>2. กดปุ่มวาดพื้นที่ (▤) และคลิกตามมุมหลังคา<br>3. คลิกจุดเริ่มต้นอีกครั้งเพื่อวาดเสร็จสิ้น</p>
+              <button class="primary amber-button full" id="mapApplyArea" disabled>นำไปใช้กับโปรเจกต์</button>
+            </aside>
+          </div>
+        </section>
+
         <section class="page" id="page-projects" data-title="โครงการทั้งหมด">
           <div class="page-heading"><div><p class="eyebrow">PROJECT WORKSPACE</p><h1>โครงการทั้งหมด</h1><p>บันทึก แยก และเรียกใช้ข้อมูลสำรวจของลูกค้าแต่ละสถานที่</p></div><button class="primary amber-button compact" id="newProject">+ สร้างโครงการ</button></div>
           <div class="project-list" id="projectList"></div>
@@ -174,7 +196,7 @@
     </div>
   </div>
 
-  <nav class="mobile-nav" aria-label="เมนูมือถือ"><button class="active" data-page="dashboard"><span>⌂</span>ภาพรวม</button><button data-page="calculator"><span>▤</span>คำนวณ</button><button data-page="sunpath"><span>☀</span>Sun Path</button><button data-page="projects"><span>▣</span>โครงการ</button><button data-page="settings"><span>⚙</span>ตั้งค่า</button></nav>
+  <nav class="mobile-nav" aria-label="เมนูมือถือ"><button class="active" data-page="dashboard"><span>⌂</span>ภาพรวม</button><button data-page="calculator"><span>▤</span>คำนวณ</button><button data-page="sunpath"><span>☀</span>Sun Path</button><button data-page="map"><span>🌍</span>แผนที่</button><button data-page="projects"><span>▣</span>โครงการ</button><button data-page="settings"><span>⚙</span>ตั้งค่า</button></nav>
 
   <dialog id="projectDialog"><form method="dialog" id="projectForm"><div class="dialog-head"><div><small>NEW SOLAR PROJECT</small><h2>สร้างโครงการใหม่</h2></div><button type="button" data-close-dialog class="icon-button">×</button></div><label>ชื่อโครงการ<input id="projectNameInput" required placeholder="เช่น บ้านคุณณรงค์ - ชลบุรี"></label><label>สถานที่<input id="projectLocationInput" required value="ชลบุรี, ประเทศไทย"></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">ยกเลิก</button><button type="submit" class="primary amber-button" id="confirmProject">สร้างโครงการ</button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

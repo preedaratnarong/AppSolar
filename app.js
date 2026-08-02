@@ -27,7 +27,7 @@
   const defaultState = {
     projects: [seedProject], activeProjectId: seedProject.id,
     equipment: {panelModel:"N-Type Mono 550W", panelWatt:550, panelArea:2.65, batteryModel:"Rack Battery 51.2V", batteryModule:5.12, batteryDod:90, inverterModel:"3-Phase Hybrid", inverterEfficiency:96.5, dcAcRatio:1.15},
-    settings: {fontScale:"1.1", highContrast:false, defaultLocation:"ชลบุรี, ประเทศไทย", defaultSunHours:4.7, background:{dataUrl:null,opacity:18,blur:0,position:"center center",size:"cover"}}
+    settings: {fontScale:"1.1", highContrast:false, defaultLocation:"ชลบุรี, ประเทศไทย", defaultSunHours:4.7, background:{dataUrl:"bg.png",opacity:18,blur:0,position:"center center",size:"cover"}}
   };
 
   let state = loadState();
@@ -37,11 +37,20 @@
   let deviceHeading = null;
   let deferredInstall = null;
   let toastTimer = null;
+  
+  let mapInstance = null;
+  let mapDrawLayer = null;
+  let mapPolyPoints = [];
+  let mapPolygon = null;
+  let isMapDrawing = false;
 
   function loadState(){
     try {
       const saved = JSON.parse(localStorage.getItem(APP_KEY));
       if (!saved?.projects?.length) return clone(defaultState);
+      if (saved.settings && saved.settings.background && saved.settings.background.dataUrl === null && !saved.settings.background.cleared) {
+        saved.settings.background.dataUrl = "bg.png";
+      }
       return {...clone(defaultState), ...saved, equipment:{...defaultState.equipment,...saved.equipment}, settings:{...defaultState.settings,...saved.settings,background:{...defaultState.settings.background,...(saved.settings?.background||{})}}};
     } catch { return clone(defaultState); }
   }
@@ -60,6 +69,10 @@
     if (page === "projects") renderProjects();
     if (page === "reports") renderReports();
     if (page === "sunpath") setTimeout(drawAROverlay, 80);
+    if (page === "map") {
+      if(!mapInstance && window.L) initMap();
+      setTimeout(() => { if(mapInstance) { mapInstance.invalidateSize(); mapUseProjectLocation(); } }, 200);
+    }
   }
 
   function setFormValues(inputs){
@@ -270,6 +283,84 @@
     if(!cameraStream){toast("กรุณาเปิดกล้องก่อนบันทึกภาพ","error");return}const video=$("cameraVideo"),overlay=$("arOverlay"),out=document.createElement("canvas");out.width=video.videoWidth||1280;out.height=video.videoHeight||720;const ctx=out.getContext("2d");ctx.drawImage(video,0,0,out.width,out.height);ctx.drawImage(overlay,0,0,out.width,out.height);out.toBlob(blob=>{const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`nexora-sun-survey-${Date.now()}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)},"image/png");const p=activeProject();p.surveys=p.surveys||[];p.surveys.push({date:new Date().toISOString(),time:formatTime(number("timeSlider",720)),season:document.querySelector("#seasonMode .active")?.dataset.value,shadow:$("shadowWindow").textContent});persist();toast("บันทึกภาพและผลสำรวจแล้ว","success")
   }
 
+  function initMap(){
+    if(!window.L || mapInstance) return;
+    mapInstance = L.map("satelliteMap", {zoomControl: false}).setView([state.projects[0].inputs.latitude, state.projects[0].inputs.longitude], 19);
+    L.control.zoom({position: 'bottomleft'}).addTo(mapInstance);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 20, attribution: 'Tiles &copy; Esri'
+    }).addTo(mapInstance);
+    
+    mapDrawLayer = L.layerGroup().addTo(mapInstance);
+    
+    mapInstance.on('click', e => {
+      if(!isMapDrawing) return;
+      mapPolyPoints.push(e.latlng);
+      drawMapPolygon();
+    });
+  }
+
+  function drawMapPolygon() {
+    mapDrawLayer.clearLayers();
+    if(mapPolyPoints.length === 0) return;
+    
+    const input = readInputs();
+    L.marker([input.latitude, input.longitude]).addTo(mapDrawLayer).bindPopup("ตำแหน่งอ้างอิง");
+
+    mapPolyPoints.forEach(p => {
+      L.circleMarker(p, {radius: 4, color: '#f5b51b', fillColor: '#fff', fillOpacity: 1}).addTo(mapDrawLayer);
+    });
+    
+    if(mapPolyPoints.length > 1) {
+      mapPolygon = L.polygon(mapPolyPoints, {color: '#68d46f', weight: 2, fillColor: '#68d46f', fillOpacity: 0.3}).addTo(mapDrawLayer);
+      if(mapPolyPoints.length > 2) calculateMapArea();
+    }
+  }
+
+  function clearMapPoly() {
+    mapPolyPoints = [];
+    mapPolygon = null;
+    mapDrawLayer.clearLayers();
+    const input = readInputs();
+    L.marker([input.latitude, input.longitude]).addTo(mapDrawLayer).bindPopup("ตำแหน่งอ้างอิง").openPopup();
+    if($("mapArea")) $("mapArea").textContent = "0.0";
+    if($("mapCapacity")) $("mapCapacity").textContent = "รองรับได้ 0 แผง";
+    if($("mapApplyArea")) $("mapApplyArea").disabled = true;
+    isMapDrawing = false;
+    if($("mapDrawPoly")) $("mapDrawPoly").style.borderColor = "";
+    if(mapInstance) mapInstance._container.style.cursor = "";
+  }
+
+  function calculateMapArea() {
+    if(mapPolyPoints.length < 3) return;
+    const earthRadius = 6378137;
+    let area = 0;
+    for (let i = 0; i < mapPolyPoints.length; i++) {
+      let p1 = mapPolyPoints[i];
+      let p2 = mapPolyPoints[(i + 1) % mapPolyPoints.length];
+      area += (p2.lng - p1.lng) * Math.PI / 180 * (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180));
+    }
+    area = Math.abs(area * earthRadius * earthRadius / 2.0);
+    if($("mapArea")) $("mapArea").textContent = fmt(area, 1);
+    
+    const panelArea = Number(state.equipment.panelArea) || 2.65;
+    const panels = Math.floor((area * 0.8) / panelArea);
+    if($("mapCapacity")) $("mapCapacity").textContent = `รองรับได้ ${panels} แผง`;
+    if($("mapApplyArea")) {
+      $("mapApplyArea").disabled = false;
+      $("mapApplyArea").dataset.panels = panels;
+      $("mapApplyArea").dataset.area = area;
+    }
+  }
+
+  function mapUseProjectLocation() {
+    const input = readInputs();
+    if(mapInstance) {
+      mapInstance.setView([input.latitude, input.longitude], 19);
+      clearMapPoly();
+    }
+  }
+
   function saveEquipment(){
     state.equipment={panelModel:$("panelModel").value,panelWatt:number("equipmentPanelWatt",550),panelArea:number("panelArea",2.65),batteryModel:$("batteryModel").value,batteryModule:number("batteryModule",5.12),batteryDod:number("equipmentDod",90),inverterModel:$("inverterModel").value,inverterEfficiency:number("inverterEfficiency",96.5),dcAcRatio:number("dcAcRatio",1.15)};
     $("panelWatt").value=state.equipment.panelWatt;$("batteryDod").value=state.equipment.batteryDod;persist();calculate();toast("บันทึกค่าอุปกรณ์แล้ว","success");
@@ -307,7 +398,7 @@
     persist();applySettings();toast("บันทึกการตั้งค่าแล้ว","success");
   }
   function saveBackground(){state.settings.background=readBackgroundControls();persist();applySettings();toast("บันทึกภาพพื้นหลังแล้ว","success")}
-  function clearBackground(){state.settings.background={...(state.settings.background||{}),dataUrl:null};persist();applySettings();toast("ล้างภาพพื้นหลังแล้ว","success")}
+  function clearBackground(){state.settings.background={...(state.settings.background||{}),dataUrl:null,cleared:true};persist();applySettings();toast("ล้างภาพพื้นหลังแล้ว","success")}
   function resizeBackground(file){
     return new Promise((resolve,reject)=>{
       const reader=new FileReader();reader.onerror=()=>reject(new Error("อ่านไฟล์ไม่สำเร็จ"));reader.onload=()=>{const image=new Image();image.onerror=()=>reject(new Error("ภาพไม่ถูกต้อง"));image.onload=()=>{const max=1920,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",.82))};image.src=reader.result};reader.readAsDataURL(file);
@@ -337,6 +428,19 @@
     $("seasonMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#seasonMode button").forEach(x=>x.classList.toggle("active",x===b));const labels={summer:"ฤดูร้อน",rainy:"ฤดูฝน",winter:"ฤดูหนาว"};$("seasonBadge").textContent=labels[b.dataset.value];renderSunPath();drawAROverlay()});
     window.addEventListener("resize",drawAROverlay);window.addEventListener("beforeunload",stopCamera);
     window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;$("installApp").hidden=false});$("installApp").addEventListener("click",async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$("installApp").hidden=true});
+    if($("mapDrawPoly")) $("mapDrawPoly").addEventListener("click", () => {
+      isMapDrawing = !isMapDrawing;
+      $("mapDrawPoly").style.borderColor = isMapDrawing ? "var(--cyan)" : "";
+      if(mapInstance) mapInstance._container.style.cursor = isMapDrawing ? "crosshair" : "";
+      toast(isMapDrawing ? "คลิกบนแผนที่ตามมุมหลังคา" : "ยกเลิกการวาด");
+    });
+    if($("mapClearPoly")) $("mapClearPoly").addEventListener("click", clearMapPoly);
+    if($("mapUseLocation")) $("mapUseLocation").addEventListener("click", mapUseProjectLocation);
+    if($("mapApplyArea")) $("mapApplyArea").addEventListener("click", () => {
+      if($("mapApplyArea").disabled) return;
+      toast(`พื้นที่ ${$("mapArea").textContent} ตร.ม. รองรับแผงได้สูงสุด ${$("mapApplyArea").dataset.panels} แผง`, "success");
+      navigate("dashboard");
+    });
   }
 
   function init(){
