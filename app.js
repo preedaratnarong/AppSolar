@@ -330,8 +330,8 @@
     $("projectForm").addEventListener("submit",e=>{e.preventDefault();const name=$("projectNameInput").value.trim(),location=$("projectLocationInput").value.trim();if(!name||!location)return;createProject(name,location);$("projectDialog").close();$("projectForm").reset();$("projectLocationInput").value=state.settings.defaultLocation});
     $("saveEquipment").addEventListener("click",saveEquipment);$("exportCsv").addEventListener("click",exportCsv);$("printReport").addEventListener("click",()=>window.print());
     $("saveSettings").addEventListener("click",saveSettings);$("enableNotifications").addEventListener("click",requestNotifications);$("notificationButton").addEventListener("click",requestNotifications);
-    $("backgroundImageInput").addEventListener("change",handleBackgroundUpload);$("saveBackground").addEventListener("click",saveBackground);$("clearBackground").addEventListener("click",clearBackground);
-    ["backgroundOpacity","backgroundBlur","backgroundPosition","backgroundSize"].forEach(id=>$(id).addEventListener("input",()=>{state.settings.background=readBackgroundControls();applySettings()}));
+    $("backgroundImageInput").addEventListener("change",handleBackgroundUpload);$("saveBackground").addEventListener("click",saveBackground);$("clearBackground").addEventListener("click",clearBackground);document.querySelector(".upload-dropzone")?.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();$("backgroundImageInput").click()}});
+    ["backgroundOpacity","backgroundBlur","backgroundPosition","backgroundSize"].forEach(id=>{const update=()=>{state.settings.background=readBackgroundControls();applySettings()};$(id).addEventListener("input",update);$(id).addEventListener("change",update)});
     $("startCamera").addEventListener("click",startCamera);$("stopCamera").addEventListener("click",stopCamera);$("enableCompass").addEventListener("click",enableCompass);$("captureSurvey").addEventListener("click",captureSurvey);
     ["timeSlider","obstacleSlider","fovSlider"].forEach(id=>$(id).addEventListener("input",()=>{if(id==="timeSlider")$("timeValue").textContent=formatTime(number(id));if(id==="obstacleSlider")$("obstacleValue").textContent=number(id);if(id==="fovSlider")$("fovValue").textContent=number(id);drawAROverlay()}));
     $("seasonMode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#seasonMode button").forEach(x=>x.classList.toggle("active",x===b));const labels={summer:"ฤดูร้อน",rainy:"ฤดูฝน",winter:"ฤดูหนาว"};$("seasonBadge").textContent=labels[b.dataset.value];renderSunPath();drawAROverlay()});
@@ -344,7 +344,7 @@
     const p=activeProject();setFormValues(p.inputs);renderProjectSelector();
     Object.entries(state.equipment).forEach(([key,value])=>{const map={panelWatt:"equipmentPanelWatt",batteryDod:"equipmentDod"};const el=$(map[key]||key);if(el)el.value=value});
     $("fontScale").value=state.settings.fontScale;$("highContrast").checked=state.settings.highContrast;$("defaultLocation").value=state.settings.defaultLocation;$("defaultSunHours").value=state.settings.defaultSunHours;applySettings();bindEvents();updateBackgroundControls();calculate();renderProjects();renderReports();
-    if("serviceWorker" in navigator && location.protocol!=="file:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+    if("serviceWorker" in navigator && location.protocol!=="file:") navigator.serviceWorker.register("sw.js").then(reg=>reg.update()).catch(()=>{});
   }
   document.addEventListener("DOMContentLoaded",init);
 })();
