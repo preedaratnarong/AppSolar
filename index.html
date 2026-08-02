@@ -9,9 +9,8 @@
   <title>NEXORA Solar Planner</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
   <div class="app-shell">
@@ -22,7 +21,7 @@
         <button class="nav-item" data-page="projects" aria-label="โครงการ"><span>▣</span><small>โครงการ</small></button>
         <button class="nav-item" data-page="calculator" aria-label="คำนวณ"><span>▤</span><small>คำนวณ</small></button>
         <button class="nav-item" data-page="sunpath" aria-label="Sun Path"><span>☀</span><small>Sun Path</small></button>
-        <button class="nav-item" data-page="map" aria-label="แผนที่"><span>🌍</span><small>แผนที่</small></button>
+        <button class="nav-item" data-page="map" aria-label="แผนที่จริง"><span>⌖</span><small>แผนที่</small></button>
         <button class="nav-item" data-page="equipment" aria-label="อุปกรณ์"><span>▥</span><small>อุปกรณ์</small></button>
         <button class="nav-item" data-page="reports" aria-label="รายงาน"><span>▧</span><small>รายงาน</small></button>
         <button class="nav-item" data-page="settings" aria-label="ตั้งค่า"><span>⚙</span><small>ตั้งค่า</small></button>
@@ -124,7 +123,7 @@
           <div class="page-heading"><div><p class="eyebrow">AUGMENTED REALITY SURVEY</p><h1>Sun Path Camera</h1><p>จำลองเส้นทางดวงอาทิตย์และช่วงเงาบังจากตำแหน่ง ทิศกล้อง เวลา และฤดูกาล</p></div><span class="secure-note">กล้องทำงานบน HTTPS หรือ localhost</span></div>
           <div class="camera-layout">
             <article class="camera-stage card" id="cameraStage">
-              <video id="cameraVideo" autoplay playsinline muted></video><div class="camera-placeholder" id="cameraPlaceholder"><span>☀</span><h2>พร้อมสำรวจตำแหน่งติดตั้ง</h2><p>กด “เปิดกล้อง” แล้วหันโทรศัพท์ไปยังพื้นที่หลังคา</p></div><canvas id="arOverlay"></canvas>
+              <video id="cameraVideo" playsinline muted></video><img id="cameraReferenceImage" class="camera-reference-image" alt="ภาพอ้างอิงพื้นที่ติดตั้ง" hidden><div class="camera-placeholder" id="cameraPlaceholder"><span>☀</span><h2>พร้อมสำรวจตำแหน่งติดตั้ง</h2><p>กด “เปิดกล้อง” แล้วหันโทรศัพท์ไปยังพื้นที่หลังคา</p></div><canvas id="arOverlay"></canvas><div id="cameraMapInset" class="camera-map-inset" hidden aria-label="แผนที่อ้างอิงบนกล้อง"></div>
               <div class="camera-top"><span class="record-dot"></span><b>SUN PATH CAMERA</b><span id="cameraHeading">ทิศกล้อง --°</span></div>
               <div class="shadow-alert" id="shadowAlert">ยังไม่ได้วิเคราะห์เงาบัง</div>
               <div class="camera-readout"><div><small>AZIMUTH</small><strong><span id="arAzimuth">--</span>°</strong></div><div><small>ELEVATION</small><strong><span id="arElevation">--</span>°</strong></div><div><small>HEADING</small><strong><span id="deviceHeading">--</span>°</strong></div></div>
@@ -135,30 +134,20 @@
               <label>เวลาจำลอง <b id="timeValue">12:00</b><input type="range" id="timeSlider" min="360" max="1080" step="10" value="720"></label>
               <label>ความสูงสิ่งกีดขวาง <b><span id="obstacleValue">35</span>°</b><input type="range" id="obstacleSlider" min="0" max="80" step="1" value="35"></label>
               <label>มุมมองกล้อง <b><span id="fovValue">65</span>°</b><input type="range" id="fovSlider" min="40" max="100" step="1" value="65"></label>
-              <div class="control-grid"><button class="primary blue-button" id="startCamera">▣ เปิดกล้อง</button><button class="secondary" id="stopCamera" disabled>หยุดกล้อง</button><button class="secondary" id="enableCompass">⌁ เปิดเข็มทิศ</button><button class="secondary" id="cameraLocation">● ใช้ GPS</button></div>
+              <div class="control-grid"><button class="primary blue-button" id="startCamera">▣ เปิดกล้อง</button><button class="secondary" id="stopCamera" disabled>หยุดกล้อง</button><button class="secondary" id="enableCompass">⌁ เปิดเข็มทิศ</button><button class="secondary" id="cameraLocation">● ใช้ GPS</button></div><div class="camera-status" id="cameraStatus">ยังไม่ได้เปิดกล้อง</div><button class="secondary full" id="toggleCameraMap">⌖ แสดงแผนที่จริงบนกล้อง</button><label class="camera-reference-upload" for="cameraReferenceInput">หรือเลือกภาพอ้างอิงจากเครื่อง<input type="file" id="cameraReferenceInput" accept="image/*"></label>
               <button class="primary green-button full" id="captureSurvey">บันทึกภาพสำรวจ</button>
-              <div class="survey-result"><span>ช่วงเสี่ยงเงาบัง</span><strong id="shadowWindow">รอการสำรวจ</strong><p id="placementAdvice">ระบบจะแสดงตำแหน่งดวงอาทิตย์ทับบนภาพกล้องแบบเรียลไทม์</p></div>
+              <div class="survey-result"><span>ช่วงเสี่ยงเงาบัง</span><strong id="shadowWindow">รอการสำรวจ</strong><p id="placementAdvice">ระบบจะแสดงตำแหน่งดวงอาทิตย์ทับบนภาพกล้องแบบเรียลไทม์</p></div><div class="camera-map-source"><span>จุดอ้างอิงจากแผนที่จริง</span><strong id="cameraMapCoords">13.41670, 101.33470</strong><button class="secondary full" id="openMapFromCamera">เปิดแผนที่จริง</button></div>
             </aside>
           </div>
         </section>
 
-        <section class="page" id="page-map" data-title="แผนที่ดาวเทียม">
-          <div class="page-heading"><div><p class="eyebrow">SATELLITE MAP ANALYSIS</p><h1>วิเคราะห์พื้นที่บนแผนที่</h1><p>ค้นหาและวาดพื้นที่หลังคาบนแผนที่ดาวเทียม เพื่อประเมินพื้นที่ติดตั้งจริง</p></div><div class="button-row"><button class="secondary" id="mapUseLocation">● ไปยังตำแหน่งโปรเจกต์</button></div></div>
+        <section class="page" id="page-map" data-title="แผนที่จริงและภาพดาวเทียม">
+          <div class="page-heading"><div><p class="eyebrow">REAL MAP &amp; SATELLITE SURVEY</p><h1>แผนที่จริง / ภาพดาวเทียม</h1><p>เลือกตำแหน่งหลังคาจากแผนที่จริง แล้วส่งพิกัดเดียวกันไปใช้คำนวณ Sun Path Camera</p></div><span class="secure-note">ต้องเชื่อมต่ออินเทอร์เน็ตเพื่อโหลดแผนที่</span></div>
           <div class="map-layout">
-            <article class="map-stage card" id="mapStage">
-              <div id="satelliteMap" class="map-container"></div>
-              <div class="map-overlay-ui">
-                <button class="icon-button" id="mapDrawPoly" title="วาดพื้นที่หลังคา">▤</button>
-                <button class="icon-button" id="mapClearPoly" title="ล้างพื้นที่">🗑</button>
-              </div>
-            </article>
-            <aside class="map-controls card">
-              <h2>ผลการวิเคราะห์พื้นที่</h2>
-              <div class="metric-card amber map-metric"><div class="metric-icon panel-icon">▤</div><div><span>พื้นที่วัดได้</span><strong><b id="mapArea">0.0</b> <small>ตร.ม.</small></strong><em id="mapCapacity">รองรับได้ 0 แผง</em></div></div>
-              <p class="map-help">1. เลื่อนแผนที่ไปยังตำแหน่งบ้าน<br>2. กดปุ่มวาดพื้นที่ (▤) และคลิกตามมุมหลังคา<br>3. คลิกจุดเริ่มต้นอีกครั้งเพื่อวาดเสร็จสิ้น</p>
-              <button class="primary amber-button full" id="mapApplyArea" disabled>นำไปใช้กับโปรเจกต์</button>
-            </aside>
+            <article class="card map-panel"><div class="map-toolbar"><div class="map-search"><input id="mapSearchInput" placeholder="ค้นหาสถานที่ เช่น วัดปรกฟ้า ชลบุรี" aria-label="ค้นหาสถานที่"><button class="primary blue-button compact" id="mapSearchButton">ค้นหา</button></div><div class="layer-switch"><button class="active" id="streetLayerButton">แผนที่ถนน</button><button id="satelliteLayerButton">ภาพดาวเทียม</button></div></div><div id="siteMap" class="site-map" role="application" aria-label="แผนที่จริง"></div><div class="map-attribution-note">© OpenStreetMap contributors · ภาพดาวเทียม Esri World Imagery</div></article>
+            <aside class="card map-sidebar"><h2>จุดสำรวจโครงการ</h2><p class="map-help">แตะบนแผนที่เพื่อวางหมุด หรือใช้ GPS แล้วลากหมุดไปตรงหลังคาที่ต้องการติดตั้ง</p><div class="coordinate-card"><div><span>ละติจูด</span><strong id="mapLatitude">13.41670</strong></div><div><span>ลองจิจูด</span><strong id="mapLongitude">101.33470</strong></div><div><span>ซูม</span><strong id="mapZoom">14</strong></div></div><button class="primary blue-button full" id="mapUseGps">● ใช้ตำแหน่ง GPS</button><button class="secondary full" id="mapUseForCamera">นำจุดนี้ไปใช้กับ Sun Path Camera</button><button class="secondary full" id="mapSavePoint">บันทึกจุดสำรวจในโครงการ</button><div class="map-location-status" id="mapLocationStatus">กำลังเตรียมแผนที่…</div><div class="map-legend"><span class="legend-dot roof"></span>หมุดตำแหน่งติดตั้ง<span class="legend-dot shade"></span>ใช้ทิศและพิกัดเดียวกับกล้อง</div></aside>
           </div>
+          <div class="card map-note"><strong>วิธีใช้กับกล้อง</strong><p>เลือกภาพดาวเทียมเพื่อดูแนวหลังคาและต้นไม้โดยรอบ → วางหมุดบนหลังคา → กด “นำจุดนี้ไปใช้กับ Sun Path Camera” ระบบจะส่งละติจูด/ลองจิจูดไปคำนวณมุมดวงอาทิตย์และเปิดกล้อง AR ที่จุดเดียวกัน</p></div>
         </section>
 
         <section class="page" id="page-projects" data-title="โครงการทั้งหมด">
@@ -184,7 +173,7 @@
         <section class="page" id="page-settings" data-title="ตั้งค่าระบบ">
           <div class="page-heading"><div><p class="eyebrow">APPLICATION SETTINGS</p><h1>ตั้งค่าระบบ</h1><p>ปรับการแสดงผล ค่าเริ่มต้น และข้อมูลผู้พัฒนา</p></div></div>
           <div class="settings-grid"><article class="card form-card"><h2>การแสดงผล</h2><label>ขนาดตัวอักษร<select id="fontScale"><option value="1">มาตรฐาน</option><option value="1.1" selected>ใหญ่</option><option value="1.2">ใหญ่มาก</option></select></label><label class="switch-row"><span><b>โหมดความคมชัดสูง</b><small>เพิ่มเส้นขอบและความต่างของสี</small></span><input type="checkbox" id="highContrast"></label></article><article class="card form-card"><h2>ค่าเริ่มต้นโครงการ</h2><label>จังหวัด/พื้นที่<input id="defaultLocation" value="ชลบุรี, ประเทศไทย"></label><label>ชั่วโมงแดดเฉลี่ย<input id="defaultSunHours" type="number" step="0.1" value="4.7"></label></article><article class="card form-card"><h2>ข้อมูลระบบ</h2><label>ชื่อแพลตฟอร์ม<input value="NEXORA SOLAR PLANNER" disabled></label><label>ผู้พัฒนา<input value="ณรงค์ ปรีดารัตน์" disabled></label><button class="secondary" id="enableNotifications">เปิดการแจ้งเตือน</button></article></div>
-          <article class="card form-card background-card"><div class="background-card-head"><div><p class="eyebrow">CUSTOM BACKDROP</p><h2>ภาพพื้นหลังแพลตฟอร์ม</h2><p>เพิ่มหรือเปลี่ยนภาพพื้นหลังจากเครื่อง ภาพจะถูกเก็บไว้ในเบราว์เซอร์เครื่องนี้</p></div><div class="background-preview" id="backgroundPreview" aria-label="ตัวอย่างภาพพื้นหลัง"></div></div><label class="upload-dropzone" tabindex="0" role="button"><span>＋</span><b>เลือกภาพพื้นหลัง</b><small>JPG, PNG หรือ WebP • ระบบจะย่อขนาดให้อัตโนมัติ</small><input type="file" id="backgroundImageInput" accept="image/*"></label><div class="background-controls"><label>ความเข้มภาพ <b><span id="backgroundOpacityValue">18</span>%</b><input type="range" id="backgroundOpacity" min="0" max="100" step="1" value="18"></label><label>ความเบลอ <b><span id="backgroundBlurValue">0</span> px</b><input type="range" id="backgroundBlur" min="0" max="12" step="1" value="0"></label><label>ตำแหน่งภาพ<select id="backgroundPosition"><option value="center center">กึ่งกลาง</option><option value="center top">ด้านบน</option><option value="center bottom">ด้านล่าง</option><option value="left center">ซ้าย</option><option value="right center">ขวา</option></select></label><label>รูปแบบการวาง<select id="backgroundSize"><option value="cover">เต็มพื้นที่</option><option value="contain">แสดงเต็มภาพ</option><option value="auto">ขนาดจริง</option></select></label></div><div class="background-actions"><button type="button" class="secondary" id="clearBackground">ล้างภาพพื้นหลัง</button><button type="button" class="primary green-button" id="saveBackground">บันทึกภาพพื้นหลัง</button></div></article><button class="primary green-button" id="saveSettings">บันทึกการตั้งค่า</button>
+          <article class="card form-card background-card"><div class="background-card-head"><div><p class="eyebrow">CUSTOM BACKDROP</p><h2>ภาพพื้นหลังแพลตฟอร์ม</h2><p>เพิ่มหรือเปลี่ยนภาพพื้นหลังจากเครื่อง ภาพจะถูกเก็บไว้ในเบราว์เซอร์เครื่องนี้</p></div><div class="background-preview" id="backgroundPreview" aria-label="ตัวอย่างภาพพื้นหลัง"></div></div><label class="upload-dropzone" tabindex="0" role="button"><span>＋</span><b>เลือกภาพพื้นหลัง</b><small>JPG, PNG หรือ WebP • ระบบจะย่อขนาดให้อัตโนมัติ</small><input type="file" id="backgroundImageInput" accept="image/*"></label><div class="background-controls"><label>ความเข้มภาพ <b><span id="backgroundOpacityValue">18</span>%</b><input type="range" id="backgroundOpacity" min="0" max="60" step="1" value="18"></label><label>ความเบลอ <b><span id="backgroundBlurValue">0</span> px</b><input type="range" id="backgroundBlur" min="0" max="12" step="1" value="0"></label><label>ตำแหน่งภาพ<select id="backgroundPosition"><option value="center center">กึ่งกลาง</option><option value="center top">ด้านบน</option><option value="center bottom">ด้านล่าง</option><option value="left center">ซ้าย</option><option value="right center">ขวา</option></select></label><label>รูปแบบการวาง<select id="backgroundSize"><option value="cover">เต็มพื้นที่</option><option value="contain">แสดงเต็มภาพ</option><option value="auto">ขนาดจริง</option></select></label></div><div class="background-actions"><button type="button" class="secondary" id="clearBackground">ล้างภาพพื้นหลัง</button><button type="button" class="primary green-button" id="saveBackground">บันทึกภาพพื้นหลัง</button></div></article><button class="primary green-button" id="saveSettings">บันทึกการตั้งค่า</button>
         </section>
 
         <section class="page" id="page-help" data-title="วิธีใช้งาน">
@@ -196,10 +185,11 @@
     </div>
   </div>
 
-  <nav class="mobile-nav" aria-label="เมนูมือถือ"><button class="active" data-page="dashboard"><span>⌂</span>ภาพรวม</button><button data-page="calculator"><span>▤</span>คำนวณ</button><button data-page="sunpath"><span>☀</span>Sun Path</button><button data-page="map"><span>🌍</span>แผนที่</button><button data-page="projects"><span>▣</span>โครงการ</button><button data-page="settings"><span>⚙</span>ตั้งค่า</button></nav>
+  <nav class="mobile-nav" aria-label="เมนูมือถือ"><button class="active" data-page="dashboard"><span>⌂</span>ภาพรวม</button><button data-page="calculator"><span>▤</span>คำนวณ</button><button data-page="sunpath"><span>☀</span>Sun Path</button><button data-page="map"><span>⌖</span>แผนที่</button><button data-page="projects"><span>▣</span>โครงการ</button><button data-page="settings"><span>⚙</span>ตั้งค่า</button></nav>
 
   <dialog id="projectDialog"><form method="dialog" id="projectForm"><div class="dialog-head"><div><small>NEW SOLAR PROJECT</small><h2>สร้างโครงการใหม่</h2></div><button type="button" data-close-dialog class="icon-button">×</button></div><label>ชื่อโครงการ<input id="projectNameInput" required placeholder="เช่น บ้านคุณณรงค์ - ชลบุรี"></label><label>สถานที่<input id="projectLocationInput" required value="ชลบุรี, ประเทศไทย"></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">ยกเลิก</button><button type="submit" class="primary amber-button" id="confirmProject">สร้างโครงการ</button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
