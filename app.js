@@ -42,7 +42,6 @@
   let mapDrawLayer = null;
   let mapPolyPoints = [];
   let mapPolygon = null;
-  let isMapDrawing = false;
 
   function loadState(){
     try {
@@ -285,16 +284,15 @@
 
   function initMap(){
     if(!window.L || mapInstance) return;
-    mapInstance = L.map("satelliteMap", {zoomControl: false}).setView([state.projects[0].inputs.latitude, state.projects[0].inputs.longitude], 19);
+    mapInstance = L.map("satelliteMap", {zoomControl: false}).setView([state.projects[0].inputs.latitude, state.projects[0].inputs.longitude], 18);
     L.control.zoom({position: 'bottomleft'}).addTo(mapInstance);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 20, attribution: 'Tiles &copy; Esri'
+      maxZoom: 18, attribution: 'Tiles &copy; Esri'
     }).addTo(mapInstance);
     
     mapDrawLayer = L.layerGroup().addTo(mapInstance);
     
     mapInstance.on('click', e => {
-      if(!isMapDrawing) return;
       mapPolyPoints.push(e.latlng);
       drawMapPolygon();
     });
@@ -326,7 +324,6 @@
     if($("mapArea")) $("mapArea").textContent = "0.0";
     if($("mapCapacity")) $("mapCapacity").textContent = "รองรับได้ 0 แผง";
     if($("mapApplyArea")) $("mapApplyArea").disabled = true;
-    isMapDrawing = false;
     if($("mapDrawPoly")) $("mapDrawPoly").style.borderColor = "";
     if(mapInstance) mapInstance._container.style.cursor = "";
   }
@@ -356,7 +353,7 @@
   function mapUseProjectLocation() {
     const input = readInputs();
     if(mapInstance) {
-      mapInstance.setView([input.latitude, input.longitude], 19);
+      mapInstance.setView([input.latitude, input.longitude], 18);
       clearMapPoly();
     }
   }
@@ -429,10 +426,7 @@
     window.addEventListener("resize",drawAROverlay);window.addEventListener("beforeunload",stopCamera);
     window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;$("installApp").hidden=false});$("installApp").addEventListener("click",async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$("installApp").hidden=true});
     if($("mapDrawPoly")) $("mapDrawPoly").addEventListener("click", () => {
-      isMapDrawing = !isMapDrawing;
-      $("mapDrawPoly").style.borderColor = isMapDrawing ? "var(--cyan)" : "";
-      if(mapInstance) mapInstance._container.style.cursor = isMapDrawing ? "crosshair" : "";
-      toast(isMapDrawing ? "คลิกบนแผนที่ตามมุมหลังคา" : "ยกเลิกการวาด");
+      toast("คลิกจุดบนแผนที่ตามมุมหลังคาได้เลยครับ");
     });
     if($("mapClearPoly")) $("mapClearPoly").addEventListener("click", clearMapPoly);
     if($("mapUseLocation")) $("mapUseLocation").addEventListener("click", mapUseProjectLocation);
