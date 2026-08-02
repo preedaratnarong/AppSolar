@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07111c" />
+  <meta name="description" content="NEXORA Solar Planner ระบบคำนวณและสำรวจตำแหน่งติดตั้งโซลาร์เซลล์" />
+  <title>NEXORA Solar Planner</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="เมนูหลัก">
+      <div class="side-brand" aria-hidden="true">N</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-page="dashboard" aria-label="ภาพรวม"><span>⌂</span><small>ภาพรวม</small></button>
+        <button class="nav-item" data-page="projects" aria-label="โครงการ"><span>▣</span><small>โครงการ</small></button>
+        <button class="nav-item" data-page="calculator" aria-label="คำนวณ"><span>▤</span><small>คำนวณ</small></button>
+        <button class="nav-item" data-page="sunpath" aria-label="Sun Path"><span>☀</span><small>Sun Path</small></button>
+        <button class="nav-item" data-page="equipment" aria-label="อุปกรณ์"><span>▥</span><small>อุปกรณ์</small></button>
+        <button class="nav-item" data-page="reports" aria-label="รายงาน"><span>▧</span><small>รายงาน</small></button>
+        <button class="nav-item" data-page="settings" aria-label="ตั้งค่า"><span>⚙</span><small>ตั้งค่า</small></button>
+        <button class="nav-item" data-page="help" aria-label="ช่วยเหลือ"><span>?</span><small>ช่วยเหลือ</small></button>
+      </nav>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-logo" aria-hidden="true"><span></span><span></span><i>☀</i></div>
+          <div><div class="brand-name">NEXORA <b>SOLAR PLANNER</b></div><div class="developer">ผู้พัฒนา ณรงค์ ปรีดารัตน์</div></div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="installApp" hidden title="ติดตั้งแอป">⇩</button>
+          <button class="icon-button" id="notificationButton" title="การแจ้งเตือน">♢</button>
+          <div class="avatar" title="ผู้ดูแลระบบ">NP</div>
+        </div>
+      </header>
+
+      <main id="mainContent">
+        <section class="page active" id="page-dashboard" data-title="ภาพรวมระบบ">
+          <div class="project-strip card">
+            <div class="field project-field"><label for="projectSelect">โครงการ</label><select id="projectSelect" aria-label="เลือกโครงการ"></select></div>
+            <div class="location-line"><span class="pin">●</span><span id="locationLabel">อำเภอเกาะจันทร์, ชลบุรี</span></div>
+            <div class="weather-widget"><span class="weather-sun">☀</span><div><small>สภาพแสงวันนี้</small><strong id="weatherTemp">แดดจัด</strong><span id="currentDate"></span></div></div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card amber"><div class="metric-icon panel-icon">▦</div><div><span>จำนวนแผง</span><strong><b id="panelCount">18</b> <small>แผง</small></strong><em id="arrayPower">กำลังรวม 9.90 kWp</em></div></article>
+            <article class="metric-card amber"><div class="metric-icon">▥</div><div><span>แบตเตอรี่</span><strong><b id="batterySize">20.5</b> <small>kWh</small></strong><em id="batteryVoltageLabel">แรงดันระบบ 51.2 V</em></div></article>
+            <article class="metric-card cyan"><div class="metric-icon">▰</div><div><span>อินเวอร์เตอร์</span><strong><b id="inverterSize">10</b> <small>kW</small></strong><em id="phaseLabel">3 เฟส | 380V</em></div></article>
+            <article class="metric-card green"><div class="metric-icon">∠</div><div><span>มุมเอียง</span><strong><b id="tiltAngle">13</b><small>°</small></strong><em>มุมเอียงแนะนำ</em></div></article>
+          </div>
+
+          <div class="planning-grid">
+            <article class="card roof-card">
+              <div class="card-heading"><div><h2>แผนผังหลังคาและทิศทาง</h2><p>ตำแหน่งจำลองจากข้อมูลโครงการ</p></div><button class="text-button" data-go="sunpath">สำรวจเงาบัง</button></div>
+              <div class="roof-layout">
+                <div class="compass-card">
+                  <div class="compass"><span class="north">N</span><span class="east">E</span><span class="south">S</span><span class="west">W</span><i id="compassNeedle"></i></div>
+                  <span>ทิศแนะนำ</span><strong id="directionText">ทิศใต้</strong><b><span id="azimuthValue">180</span>°</b><em class="status-pill good">ทิศทางที่แนะนำ</em>
+                </div>
+                <div class="roof-plan" id="roofPlan">
+                  <div class="roof-ridge"></div><div class="panel-array" id="panelArray"></div><div class="shadow-zone" id="shadowZone"><span>เงาบัง</span></div><div class="safe-zone">พื้นที่ติดตั้งสำรอง</div>
+                  <div class="shade-legend"><span>ระดับเงาบัง</span><i></i><small>ต่ำ</small><small>สูง</small></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="card sun-card">
+              <div class="card-heading"><div><h2>เส้นทางดวงอาทิตย์</h2><p id="sunDateLabel">ตำแหน่งประจำวัน</p></div><span class="status-pill" id="seasonBadge">รายปี</span></div>
+              <div class="sun-chart" id="sunChart"><svg viewBox="0 0 500 260" role="img" aria-label="กราฟเส้นทางดวงอาทิตย์"><path class="horizon" d="M25 230 H475"/><path class="sun-arc" d="M35 225 Q250 5 465 225"/><g id="sunMarkers"></g></svg><div class="sun-ground"></div></div>
+              <div class="sun-stats"><div><span>มุมอะซิมุท</span><strong><b id="sunAzimuth">180</b>°</strong><small id="sunDirection">ทิศใต้</small></div><div><span>มุมเงยสูงสุด</span><strong><b id="sunElevation">58</b>°</strong><small>ช่วงเที่ยงสุริยะ</small></div></div>
+            </article>
+          </div>
+
+          <div class="selector-row">
+            <div class="card selector-card"><span>โหมดระบบ</span><div class="segmented" id="systemMode"><button data-value="on-grid">ON-GRID</button><button data-value="off-grid">OFF-GRID</button><button class="active" data-value="hybrid">HYBRID</button></div></div>
+            <div class="card selector-card"><span>ระบบไฟฟ้า</span><div class="segmented" id="phaseMode"><button data-value="1">1 เฟส</button><button class="active cyan-active" data-value="3">3 เฟส</button></div></div>
+          </div>
+
+          <div class="dashboard-actions"><button class="primary amber-button" data-go="calculator">▤ <span>คำนวณระบบ</span></button><button class="primary blue-button" data-go="sunpath">▣ <span>เปิดกล้อง Sun Path</span></button><button class="primary green-button" id="quickSave">▣ <span>บันทึกโครงการ</span></button></div>
+        </section>
+
+        <section class="page" id="page-calculator" data-title="คำนวณระบบโซลาร์">
+          <div class="page-heading"><div><p class="eyebrow">SOLAR SYSTEM DESIGN</p><h1>คำนวณขนาดระบบ</h1><p>กรอกการใช้ไฟและข้อมูลพื้นที่ ระบบจะคำนวณแผง แบตเตอรี่ อินเวอร์เตอร์ และมุมติดตั้งให้ทันที</p></div><button class="primary amber-button compact" id="calculateNow">คำนวณใหม่</button></div>
+          <form id="calculatorForm" class="form-layout">
+            <article class="card form-card"><h2>1. การใช้พลังงาน</h2><div class="form-grid">
+              <label>ค่าไฟเฉลี่ยต่อเดือน (บาท)<input type="number" id="monthlyBill" min="0" step="100" value="4500"></label>
+              <label>การใช้ไฟต่อเดือน (kWh)<input type="number" id="monthlyEnergy" min="1" step="1" value="600" required></label>
+              <label>โหลดสูงสุดพร้อมกัน (kW)<input type="number" id="peakLoad" min="0.5" step="0.1" value="6"></label>
+              <label>ค่าไฟต่อหน่วย (บาท)<input type="number" id="tariff" min="0.1" step="0.01" value="4.18"></label>
+            </div></article>
+            <article class="card form-card"><h2>2. แผงและสภาพพื้นที่</h2><div class="form-grid">
+              <label>กำลังแผง (W)<input type="number" id="panelWatt" min="200" max="800" step="5" value="550"></label>
+              <label>ชั่วโมงแดดเฉลี่ย/วัน<input type="number" id="sunHours" min="2" max="8" step="0.1" value="4.7"></label>
+              <label>การสูญเสียระบบ (%)<input type="number" id="systemLoss" min="5" max="40" step="1" value="20"></label>
+              <label>เงาบังเฉลี่ย (%)<input type="number" id="shadeLoss" min="0" max="60" step="1" value="8"></label>
+            </div></article>
+            <article class="card form-card"><h2>3. แบตเตอรี่และไฟสำรอง</h2><div class="form-grid">
+              <label>ระยะเวลาสำรองไฟ (ชั่วโมง)<input type="number" id="backupHours" min="0" max="72" step="1" value="12"></label>
+              <label>ความลึกการคายประจุ DoD (%)<input type="number" id="batteryDod" min="50" max="100" step="1" value="90"></label>
+              <label>แรงดันแบตเตอรี่ (V)<select id="batteryVoltage"><option>48</option><option selected>51.2</option><option>96</option><option>192</option><option>384</option></select></label>
+              <label>กำลังสำรองอินเวอร์เตอร์ (%)<input type="number" id="inverterMargin" min="10" max="50" step="1" value="25"></label>
+            </div></article>
+            <article class="card form-card"><h2>4. ตำแหน่งติดตั้ง</h2><div class="form-grid">
+              <label>ละติจูด<input type="number" id="latitude" min="-90" max="90" step="0.0001" value="13.4167"></label>
+              <label>ลองจิจูด<input type="number" id="longitude" min="-180" max="180" step="0.0001" value="101.3347"></label>
+              <label>ทิศหลังคาปัจจุบัน (°)<input type="number" id="roofAzimuth" min="0" max="359" step="1" value="180"></label>
+              <label>มุมหลังคาปัจจุบัน (°)<input type="number" id="roofTilt" min="0" max="60" step="1" value="12"></label>
+            </div><button type="button" class="secondary full" id="useLocation">● ใช้ตำแหน่งปัจจุบัน</button></article>
+          </form>
+          <div class="calculation-results card" id="calculationResults"><div><span>ขนาดระบบแนะนำ</span><strong id="resultSystem">9.90 kWp</strong></div><div><span>ผลผลิตโดยประมาณ</span><strong id="resultYield">1,115 kWh/เดือน</strong></div><div><span>ลดค่าไฟโดยประมาณ</span><strong id="resultSaving">4,660 บาท/เดือน</strong></div><div><span>พื้นที่หลังคาขั้นต่ำ</span><strong id="resultArea">47.7 ตร.ม.</strong></div></div>
+          <div class="sticky-action"><button class="primary amber-button" id="applyCalculation">ใช้ผลคำนวณกับ Dashboard</button><button class="secondary" id="saveFromCalculator">บันทึกโครงการ</button></div>
+        </section>
+
+        <section class="page" id="page-sunpath" data-title="Sun Path Camera">
+          <div class="page-heading"><div><p class="eyebrow">AUGMENTED REALITY SURVEY</p><h1>Sun Path Camera</h1><p>จำลองเส้นทางดวงอาทิตย์และช่วงเงาบังจากตำแหน่ง ทิศกล้อง เวลา และฤดูกาล</p></div><span class="secure-note">กล้องทำงานบน HTTPS หรือ localhost</span></div>
+          <div class="camera-layout">
+            <article class="camera-stage card" id="cameraStage">
+              <video id="cameraVideo" playsinline muted></video><div class="camera-placeholder" id="cameraPlaceholder"><span>☀</span><h2>พร้อมสำรวจตำแหน่งติดตั้ง</h2><p>กด “เปิดกล้อง” แล้วหันโทรศัพท์ไปยังพื้นที่หลังคา</p></div><canvas id="arOverlay"></canvas>
+              <div class="camera-top"><span class="record-dot"></span><b>SUN PATH CAMERA</b><span id="cameraHeading">ทิศกล้อง --°</span></div>
+              <div class="shadow-alert" id="shadowAlert">ยังไม่ได้วิเคราะห์เงาบัง</div>
+              <div class="camera-readout"><div><small>AZIMUTH</small><strong><span id="arAzimuth">--</span>°</strong></div><div><small>ELEVATION</small><strong><span id="arElevation">--</span>°</strong></div><div><small>HEADING</small><strong><span id="deviceHeading">--</span>°</strong></div></div>
+            </article>
+            <aside class="camera-controls card">
+              <h2>ตั้งค่าการจำลอง</h2>
+              <div class="segmented seasonal" id="seasonMode"><button data-value="summer">ฤดูร้อน</button><button class="active" data-value="rainy">ฤดูฝน</button><button data-value="winter">ฤดูหนาว</button></div>
+              <label>เวลาจำลอง <b id="timeValue">12:00</b><input type="range" id="timeSlider" min="360" max="1080" step="10" value="720"></label>
+              <label>ความสูงสิ่งกีดขวาง <b><span id="obstacleValue">35</span>°</b><input type="range" id="obstacleSlider" min="0" max="80" step="1" value="35"></label>
+              <label>มุมมองกล้อง <b><span id="fovValue">65</span>°</b><input type="range" id="fovSlider" min="40" max="100" step="1" value="65"></label>
+              <div class="control-grid"><button class="primary blue-button" id="startCamera">▣ เปิดกล้อง</button><button class="secondary" id="stopCamera" disabled>หยุดกล้อง</button><button class="secondary" id="enableCompass">⌁ เปิดเข็มทิศ</button><button class="secondary" id="cameraLocation">● ใช้ GPS</button></div>
+              <button class="primary green-button full" id="captureSurvey">บันทึกภาพสำรวจ</button>
+              <div class="survey-result"><span>ช่วงเสี่ยงเงาบัง</span><strong id="shadowWindow">รอการสำรวจ</strong><p id="placementAdvice">ระบบจะแสดงตำแหน่งดวงอาทิตย์ทับบนภาพกล้องแบบเรียลไทม์</p></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-projects" data-title="โครงการทั้งหมด">
+          <div class="page-heading"><div><p class="eyebrow">PROJECT WORKSPACE</p><h1>โครงการทั้งหมด</h1><p>บันทึก แยก และเรียกใช้ข้อมูลสำรวจของลูกค้าแต่ละสถานที่</p></div><button class="primary amber-button compact" id="newProject">+ สร้างโครงการ</button></div>
+          <div class="project-list" id="projectList"></div>
+        </section>
+
+        <section class="page" id="page-equipment" data-title="ฐานข้อมูลอุปกรณ์">
+          <div class="page-heading"><div><p class="eyebrow">EQUIPMENT LIBRARY</p><h1>อุปกรณ์ที่เลือกใช้</h1><p>กำหนดข้อมูลแผง แบตเตอรี่ และอินเวอร์เตอร์สำหรับการคำนวณของโครงการ</p></div></div>
+          <div class="equipment-grid">
+            <article class="card equipment-card"><div class="equipment-visual amber">▦</div><h2>แผงโซลาร์เซลล์</h2><label>รุ่น<input id="panelModel" value="N-Type Mono 550W"></label><label>กำลัง (W)<input id="equipmentPanelWatt" type="number" value="550"></label><label>พื้นที่ต่อแผง (ตร.ม.)<input id="panelArea" type="number" step="0.01" value="2.65"></label></article>
+            <article class="card equipment-card"><div class="equipment-visual amber">▥</div><h2>แบตเตอรี่ LiFePO₄</h2><label>รุ่น<input id="batteryModel" value="Rack Battery 51.2V"></label><label>ความจุโมดูล (kWh)<input id="batteryModule" type="number" step="0.1" value="5.12"></label><label>DoD (%)<input id="equipmentDod" type="number" value="90"></label></article>
+            <article class="card equipment-card"><div class="equipment-visual cyan">▰</div><h2>Hybrid Inverter</h2><label>รุ่น<input id="inverterModel" value="3-Phase Hybrid"></label><label>ประสิทธิภาพ (%)<input id="inverterEfficiency" type="number" step="0.1" value="96.5"></label><label>DC/AC Ratio<input id="dcAcRatio" type="number" step="0.05" value="1.15"></label></article>
+          </div><button class="primary green-button" id="saveEquipment">บันทึกค่าอุปกรณ์</button>
+        </section>
+
+        <section class="page" id="page-reports" data-title="รายงานการออกแบบ">
+          <div class="page-heading"><div><p class="eyebrow">DESIGN REPORTS</p><h1>รายงานโครงการ</h1><p>สรุปผลการคำนวณและข้อมูลสำรวจที่บันทึกไว้</p></div><div class="button-row"><button class="secondary" id="exportCsv">ส่งออก CSV</button><button class="primary blue-button compact" id="printReport">พิมพ์ / PDF</button></div></div>
+          <div class="report-summary metric-grid mini"><article class="metric-card amber"><span>โครงการทั้งหมด</span><strong id="reportProjects">1</strong></article><article class="metric-card cyan"><span>กำลังติดตั้งรวม</span><strong><b id="reportPower">9.9</b> <small>kWp</small></strong></article><article class="metric-card green"><span>ผลผลิตรวม/เดือน</span><strong><b id="reportYield">1,115</b> <small>kWh</small></strong></article><article class="metric-card"><span>ลด CO₂ โดยประมาณ</span><strong><b id="reportCo2">5.6</b> <small>ตัน/ปี</small></strong></article></div>
+          <div class="card table-card"><table><thead><tr><th>โครงการ</th><th>ระบบ</th><th>แผง</th><th>แบตเตอรี่</th><th>อินเวอร์เตอร์</th><th>มุมเอียง</th><th>แก้ไขล่าสุด</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+        </section>
+
+        <section class="page" id="page-settings" data-title="ตั้งค่าระบบ">
+          <div class="page-heading"><div><p class="eyebrow">APPLICATION SETTINGS</p><h1>ตั้งค่าระบบ</h1><p>ปรับการแสดงผล ค่าเริ่มต้น และข้อมูลผู้พัฒนา</p></div></div>
+          <div class="settings-grid"><article class="card form-card"><h2>การแสดงผล</h2><label>ขนาดตัวอักษร<select id="fontScale"><option value="1">มาตรฐาน</option><option value="1.1" selected>ใหญ่</option><option value="1.2">ใหญ่มาก</option></select></label><label class="switch-row"><span><b>โหมดความคมชัดสูง</b><small>เพิ่มเส้นขอบและความต่างของสี</small></span><input type="checkbox" id="highContrast"></label></article><article class="card form-card"><h2>ค่าเริ่มต้นโครงการ</h2><label>จังหวัด/พื้นที่<input id="defaultLocation" value="ชลบุรี, ประเทศไทย"></label><label>ชั่วโมงแดดเฉลี่ย<input id="defaultSunHours" type="number" step="0.1" value="4.7"></label></article><article class="card form-card"><h2>ข้อมูลระบบ</h2><label>ชื่อแพลตฟอร์ม<input value="NEXORA SOLAR PLANNER" disabled></label><label>ผู้พัฒนา<input value="ณรงค์ ปรีดารัตน์" disabled></label><button class="secondary" id="enableNotifications">เปิดการแจ้งเตือน</button></article></div><button class="primary green-button" id="saveSettings">บันทึกการตั้งค่า</button>
+        </section>
+
+        <section class="page" id="page-help" data-title="วิธีใช้งาน">
+          <div class="page-heading"><div><p class="eyebrow">QUICK START GUIDE</p><h1>วิธีใช้งาน</h1><p>ขั้นตอนสำรวจและออกแบบระบบโซลาร์เซลล์ด้วยมือถือหรือแท็บเล็ต</p></div></div>
+          <div class="help-grid"><article class="card help-step"><b>01</b><h2>สร้างโครงการ</h2><p>ตั้งชื่อลูกค้า ระบุสถานที่ และเลือกโหมด On-grid, Off-grid หรือ Hybrid</p></article><article class="card help-step"><b>02</b><h2>กรอกการใช้ไฟ</h2><p>ใช้ข้อมูลหน่วยไฟจากบิลล่าสุด หรือกรอกค่าไฟเพื่อประเมินเบื้องต้น</p></article><article class="card help-step"><b>03</b><h2>สำรวจ Sun Path</h2><p>เปิดผ่าน HTTPS อนุญาตกล้อง GPS และเข็มทิศ แล้วหันกล้องไปยังหลังคา</p></article><article class="card help-step"><b>04</b><h2>ตรวจเงาบัง</h2><p>เลื่อนเวลาและฤดูกาลเพื่อดูจุดเสี่ยงจากต้นไม้ อาคาร และสันหลังคา</p></article><article class="card help-step"><b>05</b><h2>บันทึกและออกรายงาน</h2><p>บันทึกผลในเครื่อง ส่งออก CSV หรือพิมพ์รายงานเป็น PDF</p></article></div>
+          <div class="card disclaimer"><strong>ข้อสำคัญก่อนติดตั้งจริง</strong><p>ค่าจากกล้องและเครื่องคำนวณเป็นเครื่องมือออกแบบเบื้องต้น ต้องให้วิศวกรหรือผู้ติดตั้งที่มีคุณสมบัติตรวจโครงสร้างหลังคา ระบบไฟฟ้า อุปกรณ์ป้องกัน และเงาบังภาคสนามก่อนติดตั้งจริง</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <nav class="mobile-nav" aria-label="เมนูมือถือ"><button class="active" data-page="dashboard"><span>⌂</span>ภาพรวม</button><button data-page="calculator"><span>▤</span>คำนวณ</button><button data-page="sunpath"><span>☀</span>Sun Path</button><button data-page="projects"><span>▣</span>โครงการ</button><button data-page="settings"><span>⚙</span>ตั้งค่า</button></nav>
+
+  <dialog id="projectDialog"><form method="dialog" id="projectForm"><div class="dialog-head"><div><small>NEW SOLAR PROJECT</small><h2>สร้างโครงการใหม่</h2></div><button type="button" data-close-dialog class="icon-button">×</button></div><label>ชื่อโครงการ<input id="projectNameInput" required placeholder="เช่น บ้านคุณณรงค์ - ชลบุรี"></label><label>สถานที่<input id="projectLocationInput" required value="ชลบุรี, ประเทศไทย"></label><div class="dialog-actions"><button type="button" data-close-dialog class="secondary">ยกเลิก</button><button type="submit" class="primary amber-button" id="confirmProject">สร้างโครงการ</button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
