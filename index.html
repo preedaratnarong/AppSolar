@@ -66,7 +66,7 @@
                   <span>ทิศแนะนำ</span><strong id="directionText">ทิศใต้</strong><b><span id="azimuthValue">180</span>°</b><em class="status-pill good">ทิศทางที่แนะนำ</em>
                 </div>
                 <div class="roof-plan" id="roofPlan">
-                  <div class="roof-ridge"></div><div class="panel-array" id="panelArray"></div><div class="shadow-zone" id="shadowZone"><span>เงาบัง</span></div><div class="safe-zone">พื้นที่ติดตั้งสำรอง</div>
+                  <div class="roof-ridge"></div><div class="panel-array" id="panelArray"></div><div class="shadow-zone" id="shadowZone"><span>เงาบัง</span></div><button class="safe-zone" id="installationAreaButton" type="button">กำหนดพื้นที่ติดตั้ง<small>กดเพื่อเปิดแผนที่จริง</small></button>
                   <div class="shade-legend"><span>ระดับเงาบัง</span><i></i><small>ต่ำ</small><small>สูง</small></div>
                 </div>
               </div>
@@ -134,6 +134,8 @@
               <label>เวลาจำลอง <b id="timeValue">12:00</b><input type="range" id="timeSlider" min="360" max="1080" step="10" value="720"></label>
               <label>ความสูงสิ่งกีดขวาง <b><span id="obstacleValue">35</span>°</b><input type="range" id="obstacleSlider" min="0" max="80" step="1" value="35"></label>
               <label>มุมมองกล้อง <b><span id="fovValue">65</span>°</b><input type="range" id="fovSlider" min="40" max="100" step="1" value="65"></label>
+              <label>ทิศกล้อง (ใช้แทนเข็มทิศบนคอมพิวเตอร์) <b><span id="manualHeadingValue">180</span>°</b><input type="range" id="manualHeading" min="0" max="359" step="1" value="180"></label>
+              <button class="secondary full" id="useManualHeading" type="button">ใช้ทิศกล้องที่ตั้งด้วยมือ</button>
               <div class="control-grid"><button class="primary blue-button" id="startCamera">▣ เปิดกล้อง</button><button class="secondary" id="stopCamera" disabled>หยุดกล้อง</button><button class="secondary" id="enableCompass">⌁ เปิดเข็มทิศ</button><button class="secondary" id="cameraLocation">● ใช้ GPS</button></div><div class="camera-status" id="cameraStatus">ยังไม่ได้เปิดกล้อง</div><button class="secondary full" id="toggleCameraMap">⌖ แสดงแผนที่จริงบนกล้อง</button><label class="camera-reference-upload" for="cameraReferenceInput">หรือเลือกภาพอ้างอิงจากเครื่อง<input type="file" id="cameraReferenceInput" accept="image/*"></label>
               <button class="primary green-button full" id="captureSurvey">บันทึกภาพสำรวจ</button>
               <div class="survey-result"><span>ช่วงเสี่ยงเงาบัง</span><strong id="shadowWindow">รอการสำรวจ</strong><p id="placementAdvice">ระบบจะแสดงตำแหน่งดวงอาทิตย์ทับบนภาพกล้องแบบเรียลไทม์</p></div><div class="camera-map-source"><span>จุดอ้างอิงจากแผนที่จริง</span><strong id="cameraMapCoords">13.41670, 101.33470</strong><button class="primary blue-button full" id="confirmCameraPoint">ยืนยันจุดนี้กับ Sun Path Camera</button><button class="secondary full" id="openMapFromCamera">เปิดแผนที่จริง</button></div>
